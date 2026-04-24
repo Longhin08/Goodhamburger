@@ -4,7 +4,6 @@ using GoodHamburger.Domain.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- Services ---
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -20,14 +19,20 @@ builder.Services.AddSingleton<MenuService>();
 builder.Services.AddSingleton<DiscountService>();
 builder.Services.AddScoped<OrderService>();
 
-// CORS for Blazor client
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
-        policy.WithOrigins("https://localhost:7200", "http://localhost:5200")
+        policy.WithOrigins("https://localhost:56577")
               .AllowAnyHeader()
               .AllowAnyMethod());
 });
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 
 var app = builder.Build();
 
@@ -43,5 +48,4 @@ app.MapControllers();
 
 app.Run();
 
-// Expose Program for integration tests
 public partial class Program { }
