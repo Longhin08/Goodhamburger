@@ -1,0 +1,66 @@
+@page "/menu"
+@inject HttpClient Http
+@using GoodHamburger.BlazorUI.Models
+@using System.Net.Http.Json
+
+<PageTitle>Cardápio — Good Hamburger</PageTitle>
+
+<h1>🍔 Cardápio</h1>
+
+@if (_items is null)
+{
+    <p>Carregando...</p>
+}
+else
+{
+    <div class="menu-grid">
+        <div class="menu-section">
+            <h2>🥪 Sanduíches</h2>
+            @foreach (var item in _items.Where(i => i.Type == "Sandwich"))
+            {
+                <div class="menu-item">
+                    <span class="item-name">@item.Name</span>
+                    <span class="item-price">R$ @item.Price.ToString("F2")</span>
+                </div>
+            }
+        </div>
+        <div class="menu-section">
+            <h2>🍟 Acompanhamentos</h2>
+            @foreach (var item in _items.Where(i => i.Type == "SideDish"))
+            {
+                <div class="menu-item">
+                    <span class="item-name">@item.Name</span>
+                    <span class="item-price">R$ @item.Price.ToString("F2")</span>
+                </div>
+            }
+        </div>
+        <div class="menu-section">
+            <h2>🥤 Bebidas</h2>
+            @foreach (var item in _items.Where(i => i.Type == "Drink"))
+            {
+                <div class="menu-item">
+                    <span class="item-name">@item.Name</span>
+                    <span class="item-price">R$ @item.Price.ToString("F2")</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card discount-card">
+        <h2>🏷️ Descontos</h2>
+        <ul>
+            <li>🥪 + 🍟 + 🥤 &rarr; <strong>20% de desconto</strong></li>
+            <li>🥪 + 🥤 &rarr; <strong>15% de desconto</strong></li>
+            <li>🥪 + 🍟 &rarr; <strong>10% de desconto</strong></li>
+        </ul>
+    </div>
+}
+
+@code {
+    private List<MenuItem>? _items;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _items = await Http.GetFromJsonAsync<List<MenuItem>>("api/menu");
+    }
+}

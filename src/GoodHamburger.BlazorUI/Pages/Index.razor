@@ -1,0 +1,188 @@
+@page "/"
+@inject HttpClient Http
+@using GoodHamburger.BlazorUI.Models
+@using System.Net.Http.Json
+
+<PageTitle>Pedidos — Good Hamburger</PageTitle>
+
+<h1>Pedidos</h1>
+
+@if (!string.IsNullOrEmpty(_errorMsg))
+{
+    <div class="alert-error">@_errorMsg</div>
+}
+
+<!-- ── Form ── -->
+<section class="card form-card">
+    <h2>@(_editingId.HasValue ? "Editar Pedido" : "Novo Pedido")</h2>
+
+    <div class="form-row">
+        <label>Sanduíche</label>
+        <select @bind="_form.SandwichId">
+            <option value="">-- nenhum --</option>
+            @foreach (var item in _sandwiches)
+            {
+                <option value="@item.Id">@item.Name — R$ @item.Price.ToString("F2")</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label>Acompanhamento</label>
+        <select @bind="_form.SideDishId">
+            <option value="">-- nenhum --</option>
+            @foreach (var item in _sideDishes)
+            {
+                <option value="@item.Id">@item.Name — R$ @item.Price.ToString("F2")</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label>Bebida</label>
+        <select @bind="_form.DrinkId">
+            <option value="">-- nenhum --</option>
+            @foreach (var item in _drinks)
+            {
+                <option value="@item.Id">@item.Name — R$ @item.Price.ToString("F2")</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-actions">
+        <button class="btn-primary" @onclick="SubmitOrder">
+            @(_editingId.HasValue ? "Salvar" : "Criar Pedido")
+        </button>
+        @if (_editingId.HasValue)
+        {
+            <button class="btn-secondary" @onclick="CancelEdit">Cancelar</button>
+        }
+    </div>
+</section>
+
+<!-- ── List ── -->
+<section class="orders-list">
+    <h2>Todos os Pedidos</h2>
+    @if (_loading)
+    {
+        <p>Carregando...</p>
+    }
+    else if (!_orders.Any())
+    {
+        <p class="empty-msg">Nenhum pedido ainda. Crie o primeiro! 🍔</p>
+    }
+    else
+    {
+        @foreach (var o in _orders)
+        {
+            <div class="order-card">
+                <div class="order-header">
+                    <span class="order-id">#{o.Id.ToString()[..8]}</span>
+                    <span class="order-date">@o.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</span>
+                </div>
+                <div class="order-items">
+                    @if (o.SandwichName is not null) { <span class="tag sandwich">🥪 @o.SandwichName</span> }
+                    @if (o.SideDishName is not null) { <span class="tag side">🍟 @o.SideDishName</span> }
+                    @if (o.DrinkName is not null)    { <span class="tag drink">🥤 @o.DrinkName</span> }
+                </div>
+                <div class="order-pricing">
+                    <span>Subtotal: R$ @o.Subtotal.ToString("F2")</span>
+                    @if (o.DiscountPercent > 0)
+                    {
+                        <span class="discount">− @o.DiscountPercent% (R$ @o.DiscountAmount.ToString("F2"))</span>
+                    }
+                    <span class="total">Total: <strong>R$ @o.Total.ToString("F2")</strong></span>
+                </div>
+                <div class="order-actions">
+                    <button class="btn-edit" @onclick="() => StartEdit(o)">Editar</button>
+                    <button class="btn-delete" @onclick="() => DeleteOrder(o.Id)">Excluir</button>
+                </div>
+            </div>
+        }
+    }
+</section>
+
+@code {
+    private List<MenuItem> _sandwiches = new();
+    private List<MenuItem> _sideDishes = new();
+    private List<MenuItem> _drinks = new();
+    private List<OrderResponse> _orders = new();
+    private bool _loading = true;
+    private string? _errorMsg;
+    private Guid? _editingId;
+
+    private FormModel _form = new();
+
+    private class FormModel
+    {
+        public string? SandwichId { get; set; }
+        public string? SideDishId { get; set; }
+        public string? DrinkId { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var menu = await Http.GetFromJsonAsync<List<MenuItem>>("api/menu") ?? new();
+        _sandwiches = menu.Where(m => m.Type == "Sandwich").ToList();
+        _sideDishes  = menu.Where(m => m.Type == "SideDish").ToList();
+        _drinks      = menu.Where(m => m.Type == "Drink").ToList();
+        await LoadOrders();
+    }
+
+    private async Task LoadOrders()
+    {
+        _loading = true;
+        _orders = await Http.GetFromJsonAsync<List<OrderResponse>>("api/orders") ?? new();
+        _loading = false;
+    }
+
+    private async Task SubmitOrder()
+    {
+        _errorMsg = null;
+        var req = new OrderRequest(
+            string.IsNullOrEmpty(_form.SandwichId) ? null : _form.SandwichId,
+            string.IsNullOrEmpty(_form.SideDishId) ? null : _form.SideDishId,
+            string.IsNullOrEmpty(_form.DrinkId)    ? null : _form.DrinkId
+        );
+
+        HttpResponseMessage res;
+        if (_editingId.HasValue)
+            res = await Http.PutAsJsonAsync($"api/orders/{_editingId}", req);
+        else
+            res = await Http.PostAsJsonAsync("api/orders", req);
+
+        if (res.IsSuccessStatusCode)
+        {
+            _form = new();
+            _editingId = null;
+            await LoadOrders();
+        }
+        else
+        {
+            var err = await res.Content.ReadFromJsonAsync<ErrorResponse>();
+            _errorMsg = err?.Message ?? "Erro ao salvar pedido.";
+        }
+    }
+
+    private void StartEdit(OrderResponse o)
+    {
+        _editingId = o.Id;
+        _form = new() { SandwichId = o.SandwichId, SideDishId = o.SideDishId, DrinkId = o.DrinkId };
+        _errorMsg = null;
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _form = new();
+        _errorMsg = null;
+    }
+
+    private async Task DeleteOrder(Guid id)
+    {
+        await Http.DeleteAsync($"api/orders/{id}");
+        await LoadOrders();
+    }
+
+    private record ErrorResponse(string Message);
+}
