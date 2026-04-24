@@ -60,22 +60,18 @@ public class OrderService
         return deleted ? (true, null) : (false, "Pedido não encontrado.");
     }
 
-    // ── Private helpers ────────────────────────────────────────────────────
 
     private (Order? Order, string? Error) BuildOrder(Order existing, OrderRequest request)
     {
-        // Validate: must have at least one item
+
         if (request.SandwichId is null && request.SideDishId is null && request.DrinkId is null)
             return (null, "O pedido deve conter pelo menos um item.");
 
-        // Validate: no duplicate types allowed (request already limits to one of each,
-        // but let's guard against the same id being sent in two fields)
         var ids = new[] { request.SandwichId, request.SideDishId, request.DrinkId }
                       .Where(x => x is not null).ToList();
         if (ids.Count != ids.Distinct(StringComparer.OrdinalIgnoreCase).Count())
             return (null, "Itens duplicados no pedido. Cada tipo só pode aparecer uma vez.");
 
-        // Validate & resolve sandwich
         MenuItem? sandwich = null;
         if (request.SandwichId is not null)
         {
@@ -86,7 +82,6 @@ public class OrderService
                 return (null, $"'{request.SandwichId}' não é um sanduíche.");
         }
 
-        // Validate & resolve side dish
         MenuItem? sideDish = null;
         if (request.SideDishId is not null)
         {
@@ -97,7 +92,6 @@ public class OrderService
                 return (null, $"'{request.SideDishId}' não é um acompanhamento.");
         }
 
-        // Validate & resolve drink
         MenuItem? drink = null;
         if (request.DrinkId is not null)
         {
@@ -108,7 +102,6 @@ public class OrderService
                 return (null, $"'{request.DrinkId}' não é uma bebida.");
         }
 
-        // Calculate pricing
         decimal subtotal = (sandwich?.Price ?? 0) + (sideDish?.Price ?? 0) + (drink?.Price ?? 0);
         decimal discountPct = _discountService.GetDiscountPercent(
             sandwich is not null, sideDish is not null, drink is not null);

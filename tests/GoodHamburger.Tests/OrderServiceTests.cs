@@ -7,7 +7,6 @@ using Xunit;
 
 namespace GoodHamburger.Tests;
 
-// ── Fake in-memory repository for tests ─────────────────────────────────────
 public class FakeOrderRepository : IOrderRepository
 {
     private readonly Dictionary<Guid, Order> _store = new();
@@ -35,7 +34,6 @@ public class FakeOrderRepository : IOrderRepository
         Task.FromResult(_store.Remove(id));
 }
 
-// ── Tests ────────────────────────────────────────────────────────────────────
 public class OrderServiceTests
 {
     private readonly OrderService _sut;
@@ -121,7 +119,6 @@ public class OrderServiceTests
     [Fact]
     public async Task Create_With_Wrong_Item_Type_In_Field_Should_Return_Error()
     {
-        // putting a drink id in the sandwich field
         var req = new OrderRequest("soda", null, null);
         var (response, error) = await _sut.CreateAsync(req);
 
@@ -153,10 +150,8 @@ public class OrderServiceTests
     [Fact]
     public async Task Update_Should_Recalculate_Pricing()
     {
-        // Create with full combo (20%)
         var (created, _) = await _sut.CreateAsync(new OrderRequest("x-burger", "fries", "soda"));
 
-        // Update to sandwich only (0%)
         var (updated, error) = await _sut.UpdateAsync(created!.Id, new OrderRequest("x-bacon", null, null));
 
         error.Should().BeNull();

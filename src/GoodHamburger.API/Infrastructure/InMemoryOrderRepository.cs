@@ -4,7 +4,6 @@ using GoodHamburger.Domain.Interfaces;
 
 namespace GoodHamburger.API.Infrastructure;
 
-/// <summary>Thread-safe in-memory implementation of IOrderRepository.</summary>
 public class InMemoryOrderRepository : IOrderRepository
 {
     private readonly ConcurrentDictionary<Guid, Order> _store = new();

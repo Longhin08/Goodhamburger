@@ -1,13 +1,11 @@
 namespace GoodHamburger.Application.DTOs;
 
-/// <summary>Request body for creating or updating an order.</summary>
 public record OrderRequest(
     string? SandwichId,
     string? SideDishId,
     string? DrinkId
 );
 
-/// <summary>Response returned to the client.</summary>
 public record OrderResponse(
     Guid Id,
     string? SandwichId,

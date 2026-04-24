@@ -13,7 +13,6 @@ public class OrdersController : ControllerBase
 
     public OrdersController(OrderService orderService) => _orderService = orderService;
 
-    /// <summary>Lists all orders.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -21,7 +20,6 @@ public class OrdersController : ControllerBase
         return Ok(orders);
     }
 
-    /// <summary>Returns a single order by its ID.</summary>
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
@@ -29,7 +27,6 @@ public class OrdersController : ControllerBase
         return order is null ? NotFound(new { message = "Pedido não encontrado." }) : Ok(order);
     }
 
-    /// <summary>Creates a new order.</summary>
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] OrderRequest request)
     {
@@ -38,7 +35,6 @@ public class OrdersController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = response!.Id }, response);
     }
 
-    /// <summary>Updates an existing order.</summary>
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] OrderRequest request)
     {
@@ -48,7 +44,6 @@ public class OrdersController : ControllerBase
         return Ok(response);
     }
 
-    /// <summary>Removes an order.</summary>
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
